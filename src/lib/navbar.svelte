@@ -16,6 +16,9 @@
   // Window Dragging
   let startDragging: boolean = false;
 
+  // System information
+  const isMac = window.navigator.userAgent.includes('Mac');
+
   // Inject navbar function into global window object. Expose functions to backend.
   Object.assign(window, {
     navbar: {
@@ -26,7 +29,7 @@
   });
 
   onMount(() => {
-    if (window.navigator.userAgent.includes('Mac')) {
+    if (isMac) {
       navbarEl?.classList.add('macos');
     }
   });
@@ -66,7 +69,17 @@
     window.prompt(`NAVIGATE_TO:${url}`);
   }
   function onStartDragWindow(ev: MouseEvent) {
+    // on mac, this drag should fire before the window drag, otherwise it crash.
+    if (isMac && ev.buttons === 1) {
+      console.log('dragging window');
+      window.prompt('DRAG_WINDOW');
+      return;
+    }
+
+    // on Linux, mouse release event will not fire after dragging window,
+    // so we need to ensure it's acatually dragging window. Otherwise, double click on panel will not work.
     if (ev.buttons === 1) {
+      console.log('start dragging window');
       startDragging = true;
     }
   }
@@ -77,7 +90,9 @@
     }
   }
   function onMouseMove(ev: MouseEvent) {
-    if (startDragging) {
+    // on Linux, we use mouse move event to detect if the user is actually dragging window.
+    if (!isMac && startDragging) {
+      console.log('dragging window');
       window.prompt('DRAG_WINDOW');
       startDragging = false;
     }
