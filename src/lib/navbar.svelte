@@ -13,6 +13,9 @@
   let navbarEl: HTMLDivElement | null = null;
   let url = '';
 
+  // Window Dragging
+  let startDragging: boolean = false;
+
   // Inject navbar function into global window object. Expose functions to backend.
   Object.assign(window, {
     navbar: {
@@ -28,7 +31,7 @@
     }
   });
 
-  // Event handlers
+  /* Event handlers */
 
   function onClickPrev() {
     console.log('click prev');
@@ -62,10 +65,21 @@
     console.log(`navigate to url: ${url}`);
     window.prompt(`NAVIGATE_TO:${url}`);
   }
-  function onDragWindow(ev: MouseEvent) {
+  function onStartDragWindow(ev: MouseEvent) {
     if (ev.buttons === 1) {
-      console.log('drag window');
+      startDragging = true;
+    }
+  }
+  function onMouseUp(ev: MouseEvent) {
+    // if left button is released and dragging is started, reset dragging state
+    if ((ev.buttons & 1) === 0 && startDragging) {
+      startDragging = false;
+    }
+  }
+  function onMouseMove(ev: MouseEvent) {
+    if (startDragging) {
       window.prompt('DRAG_WINDOW');
+      startDragging = false;
     }
   }
   function onDbClickPanel() {
@@ -77,12 +91,15 @@
 <div
   class="navbar flex box-border w-full items-center gap-1"
   bind:this={navbarEl}
-  on:mousedown|self={onDragWindow}
+  on:mousemove={onMouseMove}
+  on:mousedown|self={onStartDragWindow}
+  on:mouseup|self={onMouseUp}
   on:dblclick|self={onDbClickPanel}
 >
   <div
     class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onDragWindow}
+    on:mousedown|self={onStartDragWindow}
+    on:mouseup|self={onMouseUp}
     on:dblclick|self={onDbClickPanel}
   >
     <div>
@@ -103,7 +120,8 @@
   </div>
   <div
     class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onDragWindow}
+    on:mousedown|self={onStartDragWindow}
+    on:mouseup|self={onMouseUp}
     on:dblclick|self={onDbClickPanel}
   >
     <div>
