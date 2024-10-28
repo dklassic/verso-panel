@@ -68,37 +68,41 @@
     console.log(`navigate to url: ${url}`);
     window.prompt(`NAVIGATE_TO:${url}`);
   }
-  function onStartDragWindow(ev: MouseEvent) {
-    // on mac, this drag should fire before the window drag, otherwise it crash.
-    if (isMac && ev.buttons === 1) {
-      console.log('dragging window');
-      window.prompt('DRAG_WINDOW');
-      return;
-    }
-
-    // on Linux, mouse release event will not fire after dragging window,
-    // so we need to ensure it's acatually dragging window. Otherwise, double click on panel will not work.
+  function onPanelMouseDown(ev: MouseEvent) {
+    /* Draggable window */
     if (ev.buttons === 1) {
+      // on macOS, this drag window must trigger before native drag happened, otherwise, it will crash.
+      if (isMac) {
+        console.log('dragging window');
+        window.prompt('DRAG_WINDOW');
+        return;
+      }
+
+      // on Linux, mouse release event will not fire after dragging window,
+      // so we need to ensure it's acatually dragging window. Otherwise, double click on panel will not work.
       console.log('start dragging window');
       startDragging = true;
     }
   }
-  function onMouseUp(ev: MouseEvent) {
-    // if left button is released and dragging is started, reset dragging state
+  function onPanelMouseUp(ev: MouseEvent) {
+    /* Draggable window */
+    // on Linux and Windows, if left mouse button is released and dragging is started, reset dragging state
     if ((ev.buttons & 1) === 0 && startDragging) {
+      console.log('cancel dragging window');
       startDragging = false;
     }
   }
   function onMouseMove(ev: MouseEvent) {
-    // on Linux, we use mouse move event to detect if the user is actually dragging window.
+    /* Draggable window */
+    // on Linux and Windows, we use mouse move event to detect if the user is actually dragging window.
     if (!isMac && startDragging) {
       console.log('dragging window');
       window.prompt('DRAG_WINDOW');
       startDragging = false;
     }
   }
-  function onDbClickPanel() {
-    console.log('double click panel');
+  function onPanelDbClick() {
+    console.log('double click on panel');
     window.prompt('DBCLICK_PANEL');
   }
 </script>
@@ -107,15 +111,15 @@
   class="navbar flex box-border w-full items-center gap-1"
   bind:this={navbarEl}
   on:mousemove={onMouseMove}
-  on:mousedown|self={onStartDragWindow}
-  on:mouseup|self={onMouseUp}
-  on:dblclick|self={onDbClickPanel}
+  on:mousedown|self={onPanelMouseDown}
+  on:mouseup|self={onPanelMouseUp}
+  on:dblclick|self={onPanelDbClick}
 >
   <div
     class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onStartDragWindow}
-    on:mouseup|self={onMouseUp}
-    on:dblclick|self={onDbClickPanel}
+    on:mousedown|self={onPanelMouseDown}
+    on:mouseup|self={onPanelMouseUp}
+    on:dblclick|self={onPanelDbClick}
   >
     <div>
       <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
@@ -135,9 +139,9 @@
   </div>
   <div
     class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onStartDragWindow}
-    on:mouseup|self={onMouseUp}
-    on:dblclick|self={onDbClickPanel}
+    on:mousedown|self={onPanelMouseDown}
+    on:mouseup|self={onPanelMouseUp}
+    on:dblclick|self={onPanelDbClick}
   >
     <div>
       <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
