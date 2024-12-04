@@ -9,6 +9,7 @@
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
   import NavBtn from './btn.svelte';
+  import TabBar from './tabbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
   let url = '';
@@ -27,6 +28,10 @@
       },
     },
   });
+
+  // Tabs
+  let activeTabIdx = 0;
+  let tabs = [{ name: 'example' }];
 
   onMount(() => {
     if (isMac) {
@@ -105,53 +110,90 @@
     console.log('double click on panel');
     window.prompt('DBCLICK_PANEL');
   }
+
+  function onClickNewTab() {
+    console.log('click new tab');
+    tabs.push({ name: 'new tab' });
+    tabs = tabs;
+    activeTabIdx = tabs.length-1;
+    window.prompt('NEW_TAB');
+    // TODO: get tab name;
+  }
+  function onCloseTab(tab: CustomEvent<number>) {
+    tabs = tabs.filter((_, i) => i !== tab.detail);
+    if (tab.detail < activeTabIdx) {
+      activeTabIdx--;
+    } else if (tab.detail >= tabs.length-1) {
+      activeTabIdx = tabs.length-1;
+    }
+    // TODO: Get new index from here
+    window.prompt(`CLOSE_TAB:${tab.detail}`);
+  }
+  function onActivateTab(idx: CustomEvent<number>) {
+    if (activeTabIdx === idx.detail) {
+      return;
+    }
+    activeTabIdx = idx.detail;
+    window.prompt(`ACTIVATE_TAB:${idx.detail}`);
+  }
 </script>
 
-<div
-  class="navbar flex box-border w-full items-center gap-1"
-  bind:this={navbarEl}
-  on:mousemove={onMouseMove}
-  on:mousedown|self={onPanelMouseDown}
-  on:mouseup|self={onPanelMouseUp}
-  on:dblclick|self={onPanelDbClick}
->
+<div>
   <div
-    class="flex flex-1 justify-between gap-1"
+    class="navbar flex box-border w-full items-center gap-1"
+    bind:this={navbarEl}
+    on:mousemove={onMouseMove}
     on:mousedown|self={onPanelMouseDown}
     on:mouseup|self={onPanelMouseUp}
     on:dblclick|self={onPanelDbClick}
   >
-    <div>
-      <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
-      <NavBtn on:click={onClickForward} icon={NextPageIcon} />
+    <div
+      class="flex flex-1 justify-between gap-1"
+      on:mousedown|self={onPanelMouseDown}
+      on:mouseup|self={onPanelMouseUp}
+      on:dblclick|self={onPanelDbClick}
+    >
+      <div>
+        <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
+        <NavBtn on:click={onClickForward} icon={NextPageIcon} />
+      </div>
+      <div>
+        <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
+        <NavBtn on:click={onClickNewTab} icon={NewWindowIcon} />
+      </div>
     </div>
-    <div>
-      <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
+    <div class="flex-2 w-1/2">
+      <Input
+        type="text"
+        placeholder="Search or enter website name"
+        bind:value={url}
+        on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(url)}
+      />
+    </div>
+    <div
+      class="flex flex-1 justify-between gap-1"
+      on:mousedown|self={onPanelMouseDown}
+      on:mouseup|self={onPanelMouseUp}
+      on:dblclick|self={onPanelDbClick}
+    >
+      <div>
+        <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
+      </div>
+      <div class="window-actions">
+        <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
+        <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
+        <NavBtn on:click={onClickClose} icon={CloseIcon} />
+      </div>
     </div>
   </div>
-  <div class="flex-2 w-1/2">
-    <Input
-      type="text"
-      placeholder="Search or enter website name"
-      bind:value={url}
-      on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(url)}
+  {#if tabs.length > 1}
+    <TabBar
+      {tabs}
+      activeIdx={activeTabIdx}
+      on:close-tab={onCloseTab}
+      on:activate-tab={onActivateTab}
     />
-  </div>
-  <div
-    class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onPanelMouseDown}
-    on:mouseup|self={onPanelMouseUp}
-    on:dblclick|self={onPanelDbClick}
-  >
-    <div>
-      <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
-    </div>
-    <div class="window-actions">
-      <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
-      <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
-      <NavBtn on:click={onClickClose} icon={CloseIcon} />
-    </div>
-  </div>
+  {/if}
 </div>
 
 <style lang="scss">
