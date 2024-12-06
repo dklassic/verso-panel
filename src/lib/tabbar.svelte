@@ -1,18 +1,32 @@
+<script lang="ts" context="module">
+  export interface Tab {
+    name: string;
+    id: string;
+  }
+  export interface TabCreateResponse {
+    success: boolean;
+    id: string | null;
+  }
+  export interface TabActivateRequest {
+    id: string;
+  }
+  export interface TabCloseRequest {
+    id: string;
+  }
+</script>
+
 <script lang="ts">
   import CloseIcon from '@images/close.png';
   import { createEventDispatcher } from 'svelte';
-
   const dispatch = createEventDispatcher();
 
-  export let tabs: { name: string }[] = [];
+  export let tabs: Tab[] = [];
   export let activeIdx = 0;
 
   function activateTab(idx: number) {
-    console.log(`tabbar: ACTIVATE_TAB::${idx}`);
     dispatch('activate-tab', idx);
   }
   function closeTab(idx: number) {
-    console.log(`tabbar: CLOSE_TAB::${idx}`);
     dispatch('close-tab', idx);
   }
 </script>

@@ -9,7 +9,12 @@
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
   import NavBtn from './btn.svelte';
-  import TabBar from './tabbar.svelte';
+  import TabBar, {
+    type Tab,
+    type TabActivateRequest,
+    type TabCloseRequest,
+    type TabCreateResponse,
+  } from './tabbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
   let url = '';
@@ -26,12 +31,11 @@
       setNavbarUrl: (newUrl: string) => {
         url = newUrl;
       },
+      addTab: (id: string) => {
+        tabs.push({ name: 'new tab', id: JSON.parse(id) });
+      },
     },
   });
-
-  // Tabs
-  let activeTabIdx = 0;
-  let tabs = [{ name: 'example' }];
 
   onMount(() => {
     if (isMac) {
@@ -111,30 +115,62 @@
     window.prompt('DBCLICK_PANEL');
   }
 
+  /* tabs */
+
+  let activeTabIdx = 0;
+  let tabs: Tab[] = [];
+
+  // TODO: get tab name / set index;
   function onClickNewTab() {
     console.log('click new tab');
-    tabs.push({ name: 'new tab' });
-    tabs = tabs;
-    activeTabIdx = tabs.length-1;
-    window.prompt('NEW_TAB');
-    // TODO: get tab name;
-  }
-  function onCloseTab(tab: CustomEvent<number>) {
-    tabs = tabs.filter((_, i) => i !== tab.detail);
-    if (tab.detail < activeTabIdx) {
-      activeTabIdx--;
-    } else if (tab.detail >= tabs.length-1) {
-      activeTabIdx = tabs.length-1;
-    }
-    // TODO: Get new index from here
-    window.prompt(`CLOSE_TAB:${tab.detail}`);
-  }
-  function onActivateTab(idx: CustomEvent<number>) {
-    if (activeTabIdx === idx.detail) {
+
+    let resp: TabCreateResponse = JSON.parse(
+      window.prompt('NEW_TAB') ?? '{ "success": false, id: null }'
+    );
+    if (!resp.success || !resp.id) {
       return;
     }
-    activeTabIdx = idx.detail;
-    window.prompt(`ACTIVATE_TAB:${idx.detail}`);
+
+    tabs.push({ name: 'new tab', id: resp.id });
+    tabs = tabs; // trigger svelte to re-render
+
+    activeTabIdx = Math.max(0, tabs.length - 1);
+  }
+  function onCloseTab(idx: CustomEvent<number>) {
+    let removeTab = tabs[idx.detail];
+    let request: TabCloseRequest = {
+      id: removeTab.id,
+    };
+    window.prompt(`CLOSE_TAB:${JSON.stringify(request)}`);
+
+    tabs = tabs.filter((tab, _) => tab.id !== removeTab.id);
+    let newActiveTabIdx = activeTabIdx;
+    if (idx.detail < activeTabIdx) {
+      newActiveTabIdx--;
+    } else if (idx.detail >= tabs.length - 1) {
+      newActiveTabIdx = tabs.length - 1;
+    }
+    activateTab(newActiveTabIdx);
+  }
+  function onActivateTab(idx: CustomEvent<number>) {
+    activateTab(idx.detail);
+  }
+  function activateTab(idx: number) {
+    if (activeTabIdx === idx) {
+      return;
+    }
+    if (idx >= tabs.length || idx < 0) {
+      console.error(`Invalid tab index: ${idx}`);
+      return;
+    }
+
+    activeTabIdx = idx;
+
+    let tab = tabs[idx];
+    let request: TabActivateRequest = {
+      id: tab.id,
+    };
+    window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
   }
 </script>
 
