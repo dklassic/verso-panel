@@ -14,6 +14,7 @@
     type TabActivateRequest,
     type TabCloseRequest,
     type TabCreateResponse,
+    type TabId,
   } from './tabbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
@@ -33,6 +34,18 @@
       },
       addTab: (id: string) => {
         tabs.push({ name: 'new tab', id: JSON.parse(id) });
+      },
+      setTabTitle: (id_raw: string, title: string) => {
+        let id: TabId = JSON.parse(id_raw);
+        let tab = tabs.find((tab) => {
+          return (
+            tab.id.namespace_id === id.namespace_id && tab.id.index === id.index
+          );
+        });
+        if (tab) {
+          tab.name = title;
+          tabs = tabs; // trigger svelte to re-render
+        }
       },
     },
   });

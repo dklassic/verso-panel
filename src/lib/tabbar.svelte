@@ -1,17 +1,21 @@
 <script lang="ts" context="module">
   export interface Tab {
     name: string;
-    id: string;
+    id: TabId;
   }
   export interface TabCreateResponse {
     success: boolean;
-    id: string | null;
+    id: TabId | null;
   }
   export interface TabActivateRequest {
-    id: string;
+    id: TabId;
   }
   export interface TabCloseRequest {
-    id: string;
+    id: TabId;
+  }
+  export interface TabId {
+    namespace_id: number;
+    index: number;
   }
 </script>
 
