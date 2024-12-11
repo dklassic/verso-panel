@@ -18,7 +18,7 @@
   } from './tabbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
-  let url = '';
+  let navbarUrl: string = '';
 
   // Window Dragging
   let startDragging: boolean = false;
@@ -30,10 +30,12 @@
   Object.assign(window, {
     navbar: {
       setNavbarUrl: (newUrl: string) => {
-        url = newUrl;
+        const tab = tabs[activeTabIdx];
+        tab.url = newUrl;
+        navbarUrl = newUrl;
       },
       addTab: (id: string) => {
-        tabs.push({ name: 'new tab', id: JSON.parse(id) });
+        tabs.push({ name: 'new tab', id: JSON.parse(id), url: '' });
       },
       setTabTitle: (id_raw: string, title: string) => {
         let id: TabId = JSON.parse(id_raw);
@@ -144,7 +146,7 @@
       return;
     }
 
-    tabs.push({ name: 'new tab', id: resp.id });
+    tabs.push({ name: 'new tab', id: resp.id, url: '' });
     tabs = tabs; // trigger svelte to re-render
 
     activeTabIdx = Math.max(0, tabs.length - 1);
@@ -177,12 +179,15 @@
       return;
     }
 
-    activeTabIdx = idx;
-
-    let tab = tabs[idx];
+    const tab = tabs[idx];
     let request: TabActivateRequest = {
       id: tab.id,
     };
+
+    activeTabIdx = idx;
+    // update navbar url
+    navbarUrl = tab.url;
+
     window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
   }
 </script>
@@ -215,8 +220,8 @@
       <Input
         type="text"
         placeholder="Search or enter website name"
-        bind:value={url}
-        on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(url)}
+        bind:value={navbarUrl}
+        on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(navbarUrl)}
       />
     </div>
     <div

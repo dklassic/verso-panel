@@ -2,6 +2,7 @@
   export interface Tab {
     name: string;
     id: TabId;
+    url: string;
   }
   export interface TabCreateResponse {
     success: boolean;
