@@ -1,6 +1,6 @@
 <script lang="ts" context="module">
   export interface Tab {
-    name: string;
+    name: string | null;
     id: TabId;
     url: string;
   }
@@ -61,18 +61,22 @@
 <style lang="scss">
   .tab-bar {
     display: flex;
-    flex-wrap: nowrap;
+    background-color: #eeeeee;
     height: 30px;
-    background-color: #dfdfdf;
+    flex-wrap: nowrap;
+    gap: 1px;
   }
   .tab {
     display: flex;
+    background-color: #dfdfdf;
+    height: 30px;
+    padding: 0 8px;
+    flex: 1;
     align-items: center;
     justify-content: center;
-    flex: 1;
-    height: 30px;
-    user-select: none;
+    overflow: hidden;
     cursor: default;
+    user-select: none;
     &.active {
       background-color: #ffffff;
       .close-btn {
@@ -86,11 +90,13 @@
   .title {
     flex: 1;
     text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
   .close-btn {
     visibility: hidden;
     margin-left: auto;
-    margin-right: 8px;
     width: 20px;
     height: 20px;
     padding: 4px;
