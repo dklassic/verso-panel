@@ -37,7 +37,7 @@
       addTab: (id: string) => {
         tabs.push({ name: 'new tab', id: JSON.parse(id), url: '' });
       },
-      setTabTitle: (id_raw: string, title: string) => {
+      setTabTitle: (id_raw: string, title: string | null) => {
         let id: TabId = JSON.parse(id_raw);
         let tab = tabs.find((tab) => {
           return (
@@ -45,7 +45,12 @@
           );
         });
         if (tab) {
-          tab.name = title;
+          if (title !== null) {
+            tab.name = title;
+          } else {
+            let url = new URL(tab.url);
+            tab.name = url.hostname;
+          }
           tabs = tabs; // trigger svelte to re-render
         }
       },
