@@ -176,9 +176,6 @@
     activateTab(idx.detail);
   }
   function activateTab(idx: number) {
-    if (activeTabIdx === idx) {
-      return;
-    }
     if (idx >= tabs.length || idx < 0) {
       console.error(`Invalid tab index: ${idx}`);
       return;
