@@ -239,7 +239,6 @@
       </div>
       <div>
         <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
-        <NavBtn on:click={onClickNewTab} icon={NewWindowIcon} />
       </div>
     </div>
     <div class="flex-2 w-1/2">
