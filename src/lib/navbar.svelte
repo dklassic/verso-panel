@@ -34,8 +34,29 @@
         tab.url = newUrl;
         navbarUrl = newUrl;
       },
-      addTab: (id: string) => {
-        tabs.push({ name: 'new tab', id: JSON.parse(id), url: '' });
+      addTab: (id_raw: string, active: boolean) => {
+        tabs.push({ name: 'new tab', id: JSON.parse(id_raw), url: '' });
+        if (active) {
+          activeTabIdx = tabs.length - 1;
+        }
+      },
+      closeTab: (id_raw: string) => {
+        let id: TabId = JSON.parse(id_raw);
+        let idx = tabs.findIndex((tab) => {
+          return (
+            tab.id.namespace_id === id.namespace_id && tab.id.index === id.index
+          );
+        });
+        if (idx !== -1) {
+          tabs = tabs.filter((tab, i) => i !== idx);
+          if (tabs.length > 0) {
+            activeTabIdx = calcNewIdxAfterClosed(idx);
+            return JSON.stringify(tabs[activeTabIdx].id);
+          } else {
+            // closing window
+            return '';
+          }
+        }
       },
       setTabTitle: (id_raw: string, title: string | null) => {
         let id: TabId = JSON.parse(id_raw);
@@ -164,12 +185,7 @@
     window.prompt(`CLOSE_TAB:${JSON.stringify(request)}`);
 
     tabs = tabs.filter((tab, _) => tab.id !== removeTab.id);
-    let newActiveTabIdx = activeTabIdx;
-    if (idx.detail < activeTabIdx) {
-      newActiveTabIdx--;
-    } else if (idx.detail >= tabs.length - 1) {
-      newActiveTabIdx = tabs.length - 1;
-    }
+    let newActiveTabIdx = calcNewIdxAfterClosed(idx.detail);
     activateTab(newActiveTabIdx);
   }
   function onActivateTab(idx: CustomEvent<number>) {
@@ -191,6 +207,14 @@
     navbarUrl = tab.url;
 
     window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
+  }
+  function calcNewIdxAfterClosed(idx: number) {
+    if (idx < activeTabIdx) {
+      return activeTabIdx - 1;
+    } else if (idx === activeTabIdx) {
+      return Math.min(activeTabIdx, tabs.length - 1);
+    }
+    return activeTabIdx;
   }
 </script>
 
