@@ -9,9 +9,16 @@
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
   import NavBtn from './btn.svelte';
+  import TabBar, {
+    type Tab,
+    type TabActivateRequest,
+    type TabCloseRequest,
+    type TabCreateResponse,
+    type TabId,
+  } from './tabbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
-  let url = '';
+  let navbarUrl: string = '';
 
   // Window Dragging
   let startDragging: boolean = false;
@@ -23,7 +30,50 @@
   Object.assign(window, {
     navbar: {
       setNavbarUrl: (newUrl: string) => {
-        url = newUrl;
+        const tab = tabs[activeTabIdx];
+        tab.url = newUrl;
+        navbarUrl = newUrl;
+      },
+      addTab: (id_raw: string, active: boolean) => {
+        tabs.push({ name: 'new tab', id: JSON.parse(id_raw), url: '' });
+        if (active) {
+          activeTabIdx = tabs.length - 1;
+        }
+      },
+      closeTab: (id_raw: string) => {
+        let id: TabId = JSON.parse(id_raw);
+        let idx = tabs.findIndex((tab) => {
+          return (
+            tab.id.namespace_id === id.namespace_id && tab.id.index === id.index
+          );
+        });
+        if (idx !== -1) {
+          tabs = tabs.filter((tab, i) => i !== idx);
+          if (tabs.length > 0) {
+            activeTabIdx = calcNewIdxAfterClosed(idx);
+            return JSON.stringify(tabs[activeTabIdx].id);
+          } else {
+            // closing window
+            return '';
+          }
+        }
+      },
+      setTabTitle: (id_raw: string, title: string | null) => {
+        let id: TabId = JSON.parse(id_raw);
+        let tab = tabs.find((tab) => {
+          return (
+            tab.id.namespace_id === id.namespace_id && tab.id.index === id.index
+          );
+        });
+        if (tab) {
+          if (title !== null) {
+            tab.name = title;
+          } else {
+            let url = new URL(tab.url);
+            tab.name = url.hostname;
+          }
+          tabs = tabs; // trigger svelte to re-render
+        }
       },
     },
   });
@@ -105,53 +155,124 @@
     console.log('double click on panel');
     window.prompt('DBCLICK_PANEL');
   }
+
+  /* tabs */
+
+  let activeTabIdx = 0;
+  let tabs: Tab[] = [];
+
+  // TODO: get tab name / set index;
+  function onClickNewTab() {
+    console.log('click new tab');
+
+    let resp: TabCreateResponse = JSON.parse(
+      window.prompt('NEW_TAB') ?? '{ "success": false, id: null }'
+    );
+    if (!resp.success || !resp.id) {
+      return;
+    }
+
+    tabs.push({ name: 'new tab', id: resp.id, url: '' });
+    tabs = tabs; // trigger svelte to re-render
+
+    activeTabIdx = Math.max(0, tabs.length - 1);
+  }
+  function onCloseTab(idx: CustomEvent<number>) {
+    let removeTab = tabs[idx.detail];
+    let request: TabCloseRequest = {
+      id: removeTab.id,
+    };
+    window.prompt(`CLOSE_TAB:${JSON.stringify(request)}`);
+
+    tabs = tabs.filter((tab, _) => tab.id !== removeTab.id);
+    let newActiveTabIdx = calcNewIdxAfterClosed(idx.detail);
+    activateTab(newActiveTabIdx);
+  }
+  function onActivateTab(idx: CustomEvent<number>) {
+    activateTab(idx.detail);
+  }
+  function activateTab(idx: number) {
+    if (idx >= tabs.length || idx < 0) {
+      console.error(`Invalid tab index: ${idx}`);
+      return;
+    }
+
+    const tab = tabs[idx];
+    let request: TabActivateRequest = {
+      id: tab.id,
+    };
+
+    activeTabIdx = idx;
+    // update navbar url
+    navbarUrl = tab.url;
+
+    window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
+  }
+  function calcNewIdxAfterClosed(idx: number) {
+    if (idx < activeTabIdx) {
+      return activeTabIdx - 1;
+    } else if (idx === activeTabIdx) {
+      return Math.min(activeTabIdx, tabs.length - 1);
+    }
+    return activeTabIdx;
+  }
 </script>
 
-<div
-  class="navbar flex box-border w-full items-center gap-1"
-  bind:this={navbarEl}
-  on:mousemove={onMouseMove}
-  on:mousedown|self={onPanelMouseDown}
-  on:mouseup|self={onPanelMouseUp}
-  on:dblclick|self={onPanelDbClick}
->
+<div>
   <div
-    class="flex flex-1 justify-between gap-1"
+    class="navbar flex box-border w-full items-center gap-1"
+    bind:this={navbarEl}
+    on:mousemove={onMouseMove}
     on:mousedown|self={onPanelMouseDown}
     on:mouseup|self={onPanelMouseUp}
     on:dblclick|self={onPanelDbClick}
   >
-    <div>
-      <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
-      <NavBtn on:click={onClickForward} icon={NextPageIcon} />
+    <div
+      class="flex flex-1 justify-between gap-1"
+      on:mousedown|self={onPanelMouseDown}
+      on:mouseup|self={onPanelMouseUp}
+      on:dblclick|self={onPanelDbClick}
+    >
+      <div>
+        <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
+        <NavBtn on:click={onClickForward} icon={NextPageIcon} />
+      </div>
+      <div>
+        <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
+      </div>
     </div>
-    <div>
-      <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
+    <div class="flex-2 w-1/2">
+      <Input
+        type="text"
+        placeholder="Search or enter website name"
+        bind:value={navbarUrl}
+        on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(navbarUrl)}
+      />
+    </div>
+    <div
+      class="flex flex-1 justify-between gap-1"
+      on:mousedown|self={onPanelMouseDown}
+      on:mouseup|self={onPanelMouseUp}
+      on:dblclick|self={onPanelDbClick}
+    >
+      <div>
+        <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
+      </div>
+      <div class="window-actions">
+        <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
+        <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
+        <NavBtn on:click={onClickClose} icon={CloseIcon} />
+      </div>
     </div>
   </div>
-  <div class="flex-2 w-1/2">
-    <Input
-      type="text"
-      placeholder="Search or enter website name"
-      bind:value={url}
-      on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(url)}
+  {#if tabs.length > 1}
+    <TabBar
+      {tabs}
+      activeIdx={activeTabIdx}
+      on:close-tab={onCloseTab}
+      on:activate-tab={onActivateTab}
     />
-  </div>
-  <div
-    class="flex flex-1 justify-between gap-1"
-    on:mousedown|self={onPanelMouseDown}
-    on:mouseup|self={onPanelMouseUp}
-    on:dblclick|self={onPanelDbClick}
-  >
-    <div>
-      <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
-    </div>
-    <div class="window-actions">
-      <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
-      <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
-      <NavBtn on:click={onClickClose} icon={CloseIcon} />
-    </div>
-  </div>
+  {/if}
 </div>
 
 <style lang="scss">
