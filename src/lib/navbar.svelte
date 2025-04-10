@@ -23,12 +23,24 @@
   // Window Dragging
   let startDragging: boolean = false;
 
+  // History menu state
+  let longPressTimer: number | null = null;
+  let isLongPressing = false;
+
+  // Navigation buttons enable state
+  let prevBtnEnabled = false;
+  let nextBtnEnabled = false;
+
   // System information
   const isMac = window.navigator.userAgent.includes('Mac');
 
   // Inject navbar function into global window object. Expose functions to backend.
   Object.assign(window, {
     navbar: {
+      setNavBtnEnabled: (prev: boolean, next: boolean) => {
+        prevBtnEnabled = prev;
+        nextBtnEnabled = next;
+      },
       setNavbarUrl: (newUrl: string) => {
         const tab = tabs[activeTabIdx];
         tab.url = newUrl;
@@ -142,7 +154,7 @@
       startDragging = false;
     }
   }
-  function onMouseMove(ev: MouseEvent) {
+  function onPanelMouseMove(ev: MouseEvent) {
     /* Draggable window */
     // on Linux and Windows, we use mouse move event to detect if the user is actually dragging window.
     if (!isMac && startDragging) {
@@ -216,26 +228,77 @@
     }
     return activeTabIdx;
   }
+
+  /* Browser history */
+  function onNavBtnMouseDown(ev: MouseEvent, action: 'Prev' | 'Next') {
+    if (ev.button !== 0) return; // Only handle left click
+
+    isLongPressing = true;
+
+    longPressTimer = window.setTimeout(() => {
+      if (isLongPressing) {
+        const rect = (ev.target as HTMLElement).getBoundingClientRect();
+        const request = {
+          action,
+          position: {
+            x: rect.left,
+            y: rect.bottom + 5,
+          },
+        };
+        window.prompt(`OPEN_HISTORY_MENU:${JSON.stringify(request)}`);
+      }
+    }, 500);
+  }
+
+  function onNavBtnMouseUp() {
+    isLongPressing = false;
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
+  function onNavBtnMouseLeave() {
+    isLongPressing = false;
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
 </script>
 
 <div>
   <div
     class="navbar flex box-border w-full items-center gap-1"
     bind:this={navbarEl}
-    on:mousemove={onMouseMove}
+    on:mousemove={onPanelMouseMove}
     on:mousedown|self={onPanelMouseDown}
     on:mouseup|self={onPanelMouseUp}
     on:dblclick|self={onPanelDbClick}
   >
     <div
-      class="flex flex-1 justify-between gap-1"
+      class="flex flex-1 justify-between gap-1 items-center"
       on:mousedown|self={onPanelMouseDown}
       on:mouseup|self={onPanelMouseUp}
       on:dblclick|self={onPanelDbClick}
     >
-      <div>
-        <NavBtn on:click={onClickPrev} icon={PrevPageIcon} />
-        <NavBtn on:click={onClickForward} icon={NextPageIcon} />
+      <div class="flex gap-1 items-center">
+        <NavBtn
+          on:click={onClickPrev}
+          icon={PrevPageIcon}
+          disabled={!prevBtnEnabled}
+          on:mousedown={(e) => onNavBtnMouseDown(e, 'Prev')}
+          on:mouseup={onNavBtnMouseUp}
+          on:mouseleave={onNavBtnMouseLeave}
+        />
+        <NavBtn
+          on:click={onClickForward}
+          icon={NextPageIcon}
+          disabled={!nextBtnEnabled}
+          on:mousedown={(e) => onNavBtnMouseDown(e, 'Next')}
+          on:mouseup={onNavBtnMouseUp}
+          on:mouseleave={onNavBtnMouseLeave}
+        />
       </div>
       <div>
         <NavBtn on:click={onClickNewWindow} icon={NewWindowIcon} />
@@ -250,7 +313,7 @@
       />
     </div>
     <div
-      class="flex flex-1 justify-between gap-1"
+      class="flex flex-1 justify-between items-center gap-1"
       on:mousedown|self={onPanelMouseDown}
       on:mouseup|self={onPanelMouseUp}
       on:dblclick|self={onPanelDbClick}
@@ -258,7 +321,7 @@
       <div>
         <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
       </div>
-      <div class="window-actions">
+      <div class="window-actions items-center flex gap-1">
         <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
         <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
         <NavBtn on:click={onClickClose} icon={CloseIcon} />
