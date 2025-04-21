@@ -5,6 +5,7 @@
   import MaximizeIcon from '@images/maximize.png';
   import MinimizeIcon from '@images/minimize.png';
   import NewWindowIcon from '@images/new-window.png';
+  import BookmarkIcon from '@images/bookmark.png';
   import RefreshIcon from '@images/refresh.png';
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
@@ -16,6 +17,9 @@
     type TabCreateResponse,
     type TabId,
   } from './tabbar.svelte';
+    import BookmarkBar , { 
+    type Bookmark
+  } from './bookmarkbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
   let navbarUrl: string = '';
@@ -33,6 +37,11 @@
 
   // System information
   const isMac = window.navigator.userAgent.includes('Mac');
+  const findFirstDiff = (str1:string, str2:string) => {
+        if (str1.length === 0 || str2.length === 0) return "";
+        return str2[[...str1].findIndex((el, index) => el !== str2[index])];
+      }
+
 
   // Inject navbar function into global window object. Expose functions to backend.
   Object.assign(window, {
@@ -87,6 +96,16 @@
           tabs = tabs; // trigger svelte to re-render
         }
       },
+      setBookmarks: (bookmarks_raw: string) => {
+        bookmarks = JSON.parse(bookmarks_raw);
+      },
+      appendBookmark: (name: string | null, url: string) => {
+        if (name === null) {
+          name = url;
+        }
+        bookmarks.push({ name, url });
+        bookmarks = bookmarks; // trigger svelte to re-render
+      },
     },
   });
 
@@ -113,6 +132,10 @@
   function onClickNewWindow() {
     console.log('click new window');
     window.prompt('NEW_WINDOW');
+  }
+  function onClickBookmark() {
+    console.log('click bookmark');
+    window.prompt('BOOKMARK');
   }
   function onClickClose() {
     console.log('close');
@@ -173,6 +196,9 @@
   let activeTabIdx = 0;
   let tabs: Tab[] = [];
 
+  /* bookmarks */
+  let bookmarks: Bookmark[] = [];
+
   // TODO: get tab name / set index;
   function onClickNewTab() {
     console.log('click new tab');
@@ -203,6 +229,9 @@
   function onActivateTab(idx: CustomEvent<number>) {
     activateTab(idx.detail);
   }
+  function onClickNavigateBookmark(idx: CustomEvent<number>) {
+    navigateBookmark(idx.detail);
+  }
   function activateTab(idx: number) {
     if (idx >= tabs.length || idx < 0) {
       console.error(`Invalid tab index: ${idx}`);
@@ -219,6 +248,15 @@
     navbarUrl = tab.url;
 
     window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
+  }
+  function navigateBookmark(idx: number) {
+    if (idx >= bookmarks.length || idx < 0) {
+      console.error(`Invalid bookmark index: ${idx}`);
+      return;
+    }
+
+    const bookmark = bookmarks[idx];
+    window.prompt(`NAVIGATE_TO:${bookmark.url}`);
   }
   function calcNewIdxAfterClosed(idx: number) {
     if (idx < activeTabIdx) {
@@ -306,20 +344,23 @@
     </div>
     <div class="flex-2 w-1/2">
       <Input
-        type="text"
-        placeholder="Search or enter website name"
-        bind:value={navbarUrl}
-        on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(navbarUrl)}
+      type="text"
+      placeholder="Search or enter website name"
+      bind:value={navbarUrl}
+      on:keydown={(e) => e.code === 'Enter' && onEnterNavigation(navbarUrl)}
       />
     </div>
     <div
-      class="flex flex-1 justify-between items-center gap-1"
-      on:mousedown|self={onPanelMouseDown}
-      on:mouseup|self={onPanelMouseUp}
-      on:dblclick|self={onPanelDbClick}
+    class="flex flex-1 justify-between items-center gap-1"
+    on:mousedown|self={onPanelMouseDown}
+    on:mouseup|self={onPanelMouseUp}
+    on:dblclick|self={onPanelDbClick}
     >
       <div>
         <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
+      </div>
+      <div>
+        <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
       </div>
       <div class="window-actions items-center flex gap-1">
         <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
@@ -328,6 +369,12 @@
       </div>
     </div>
   </div>
+  {#if bookmarks.length > 0}
+    <BookmarkBar
+      {bookmarks}
+      on:navigate-bookmark={onClickNavigateBookmark}
+    />
+  {/if}
   {#if tabs.length > 1}
     <TabBar
       {tabs}
