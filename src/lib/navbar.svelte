@@ -5,6 +5,7 @@
   import MaximizeIcon from '@images/maximize.png';
   import MinimizeIcon from '@images/minimize.png';
   import NewWindowIcon from '@images/new-window.png';
+  import BookmarkIcon from '@images/bookmark.png';
   import RefreshIcon from '@images/refresh.png';
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
@@ -16,6 +17,9 @@
     type TabCreateResponse,
     type TabId,
   } from './tabbar.svelte';
+    import BookmarkBar , { 
+    type Bookmark
+  } from './bookmarkbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
   let navbarUrl: string = '';
@@ -87,6 +91,16 @@
           tabs = tabs; // trigger svelte to re-render
         }
       },
+      setBookmarks: (bookmarks_raw: string) => {
+        bookmarks = JSON.parse(bookmarks_raw);
+      },
+      appendBookmark: (name: string | null, url: string) => {
+        if (name === null) {
+          name = url;
+        }
+        bookmarks.push({ name, url });
+        bookmarks = bookmarks; // trigger svelte to re-render
+      },
     },
   });
 
@@ -113,6 +127,9 @@
   function onClickNewWindow() {
     console.log('click new window');
     window.prompt('NEW_WINDOW');
+  }
+  function onClickBookmark() {
+    window.prompt('BOOKMARK');
   }
   function onClickClose() {
     console.log('close');
@@ -173,6 +190,9 @@
   let activeTabIdx = 0;
   let tabs: Tab[] = [];
 
+  /* bookmarks */
+  let bookmarks: Bookmark[] = [];
+
   // TODO: get tab name / set index;
   function onClickNewTab() {
     console.log('click new tab');
@@ -203,6 +223,9 @@
   function onActivateTab(idx: CustomEvent<number>) {
     activateTab(idx.detail);
   }
+  function onClickNavigateBookmark(idx: CustomEvent<number>) {
+    navigateBookmark(idx.detail);
+  }
   function activateTab(idx: number) {
     if (idx >= tabs.length || idx < 0) {
       console.error(`Invalid tab index: ${idx}`);
@@ -219,6 +242,15 @@
     navbarUrl = tab.url;
 
     window.prompt(`ACTIVATE_TAB:${JSON.stringify(request)}`);
+  }
+  function navigateBookmark(idx: number) {
+    if (idx >= bookmarks.length || idx < 0) {
+      console.error(`Invalid bookmark index: ${idx}`);
+      return;
+    }
+
+    const bookmark = bookmarks[idx];
+    window.prompt(`NAVIGATE_TO:${bookmark.url}`);
   }
   function calcNewIdxAfterClosed(idx: number) {
     if (idx < activeTabIdx) {
@@ -321,6 +353,9 @@
       <div>
         <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
       </div>
+      <div>
+        <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
+      </div>
       <div class="window-actions items-center flex gap-1">
         <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
         <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
@@ -328,6 +363,12 @@
       </div>
     </div>
   </div>
+  {#if bookmarks.length > 0}
+    <BookmarkBar
+      {bookmarks}
+      on:navigate-bookmark={onClickNavigateBookmark}
+    />
+  {/if}
   {#if tabs.length > 1}
     <TabBar
       {tabs}
