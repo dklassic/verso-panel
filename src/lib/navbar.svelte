@@ -6,6 +6,7 @@
   import MinimizeIcon from '@images/minimize.png';
   import NewWindowIcon from '@images/new-window.png';
   import BookmarkIcon from '@images/bookmark.png';
+  import BookmarkedIcon from '@images/bookmarked.png';
   import RefreshIcon from '@images/refresh.png';
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
@@ -353,9 +354,15 @@
       <div>
         <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
       </div>
-      <div>
-        <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
-      </div>
+      {#if bookmarks.filter((b) => b.url === tabs[activeTabIdx].url).length === 0}
+        <div>
+          <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
+        </div>
+      {:else}
+        <div>
+          <NavBtn on:click={onClickBookmark} icon={BookmarkedIcon} />
+        </div>
+      {/if}
       <div class="window-actions items-center flex gap-1">
         <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
         <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
