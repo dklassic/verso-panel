@@ -7,6 +7,7 @@
   import NewWindowIcon from '@images/new-window.png';
   import BookmarkIcon from '@images/bookmark.png';
   import BookmarkedIcon from '@images/bookmarked.png';
+  import DownloadIcon from '@images/downloads.png';
   import RefreshIcon from '@images/refresh.png';
   import { Input } from 'flowbite-svelte';
   import { onMount } from 'svelte';
@@ -18,9 +19,7 @@
     type TabCreateResponse,
     type TabId,
   } from './tabbar.svelte';
-    import BookmarkBar , { 
-    type Bookmark
-  } from './bookmarkbar.svelte';
+  import BookmarkBar, { type Bookmark } from './bookmarkbar.svelte';
 
   let navbarEl: HTMLDivElement | null = null;
   let navbarUrl: string = '';
@@ -35,6 +34,9 @@
   // Navigation buttons enable state
   let prevBtnEnabled = false;
   let nextBtnEnabled = false;
+
+  // Show / Hide Download Button
+  let showDownloadBtn = false;
 
   // System information
   const isMac = window.navigator.userAgent.includes('Mac');
@@ -102,6 +104,9 @@
         bookmarks.push({ name, url });
         bookmarks = bookmarks; // trigger svelte to re-render
       },
+      showDownloadBtn: (show: boolean) => {
+        showDownloadBtn = show;
+      },
     },
   });
 
@@ -131,6 +136,9 @@
   }
   function onClickBookmark() {
     window.prompt('BOOKMARK');
+  }
+  function onClickDownload() {
+    window.prompt('DOWNLOAD');
   }
   function onClickClose() {
     console.log('close');
@@ -354,15 +362,20 @@
       <div>
         <NavBtn on:click={onClickRefresh} icon={RefreshIcon} />
       </div>
-      {#if bookmarks.filter((b) => b.url === tabs[activeTabIdx].url).length === 0}
-        <div>
-          <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
-        </div>
-      {:else}
-        <div>
-          <NavBtn on:click={onClickBookmark} icon={BookmarkedIcon} />
-        </div>
-      {/if}
+      <div class="flex gap-1 items-center">
+        {#if showDownloadBtn}
+          <NavBtn on:click={onClickDownload} icon={DownloadIcon} />
+        {/if}
+        {#if bookmarks.filter((b) => b.url === tabs[activeTabIdx].url).length === 0}
+          <div>
+            <NavBtn on:click={onClickBookmark} icon={BookmarkIcon} />
+          </div>
+        {:else}
+          <div>
+            <NavBtn on:click={onClickBookmark} icon={BookmarkedIcon} />
+          </div>
+        {/if}
+      </div>
       <div class="window-actions items-center flex gap-1">
         <NavBtn on:click={onClickMinimize} icon={MinimizeIcon} />
         <NavBtn on:click={onClickMaximize} icon={MaximizeIcon} />
@@ -371,10 +384,7 @@
     </div>
   </div>
   {#if bookmarks.length > 0}
-    <BookmarkBar
-      {bookmarks}
-      on:navigate-bookmark={onClickNavigateBookmark}
-    />
+    <BookmarkBar {bookmarks} on:navigate-bookmark={onClickNavigateBookmark} />
   {/if}
   {#if tabs.length > 1}
     <TabBar
