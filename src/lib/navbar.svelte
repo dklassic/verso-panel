@@ -97,13 +97,6 @@
       setBookmarks: (bookmarks_raw: string) => {
         bookmarks = JSON.parse(bookmarks_raw);
       },
-      appendBookmark: (name: string | null, url: string) => {
-        if (name === null) {
-          name = url;
-        }
-        bookmarks.push({ name, url });
-        bookmarks = bookmarks; // trigger svelte to re-render
-      },
       showDownloadBtn: (show: boolean) => {
         showDownloadBtn = show;
       },
@@ -193,6 +186,14 @@
     console.log('double click on panel');
     window.prompt('DBCLICK_PANEL');
   }
+
+  function requestBookmark() {
+    window.prompt('UPDATE_BOOKMARK')
+  }
+
+  setInterval(() => {
+    requestBookmark()
+  }, 2000)
 
   /* tabs */
 
