@@ -94,9 +94,6 @@
           tabs = tabs; // trigger svelte to re-render
         }
       },
-      setBookmarks: (bookmarks_raw: string) => {
-        bookmarks = JSON.parse(bookmarks_raw);
-      },
       showDownloadBtn: (show: boolean) => {
         showDownloadBtn = show;
       },
@@ -188,7 +185,11 @@
   }
 
   function requestBookmark() {
-    window.prompt('UPDATE_BOOKMARK')
+    const response = window.prompt('UPDATE_BOOKMARK')
+    if (response !== null) {
+      const status = JSON.parse(response) as { [url: string]: Bookmark }
+      bookmarks = Object.values(status)
+    }
   }
 
   setInterval(() => {
